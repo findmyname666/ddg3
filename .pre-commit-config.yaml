@@ -1,0 +1,62 @@
+---
+# You can exclude certain files using the "exclude" key for a given hook.
+#
+# Example
+# =======
+# hooks:
+#   - id: yamllint
+#     exclude: ^terraform/
+#     args:
+#       - --format
+#       - parsable
+default_stages:
+  - pre-commit
+  - pre-push
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+  - repo: https://github.com/adrienverge/yamllint.git
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+        args:
+          - --format=parsable
+          - -c=yamllint.yaml
+          - --strict
+  - repo: https://github.com/igorshubovych/markdownlint-cli.git
+    rev: v0.45.0
+    hooks:
+      - id: markdownlint
+        args:
+          - --config=markdownlint.yaml
+      - id: markdownlint-fix
+        args:
+          - --config=markdownlint.yaml
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.88.4
+    hooks:
+      - id: terraform_fmt
+      - id: terraform_tflint
+        args:
+          - recursive
+          - --args=--disable-rule terraform_required_version
+          #  - --args=--disable-rule terraform_required_providers
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x"]
+  - repo: https://github.com/lycheeverse/lychee.git
+    rev: v0.15.1
+    hooks:
+      - id: lychee
+        # Optionally include additional CLI arguments
+        args: ["--no-progress", "--exclude", "^https://localhost"]

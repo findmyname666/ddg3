@@ -1,0 +1,42 @@
+{{define "thanks.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Share your feedback about DuckDuckGo">
+    <title>Thank You! - FeedDuck</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <main class="container">
+<div class="thanks-container">
+    <div class="thanks-icon">🎉</div>
+    <h1 class="thanks-title">Thank You!</h1>
+    <p class="thanks-message">
+        Your feedback has been received and will help us make DuckDuckGo even better.
+    </p>
+    
+    <div class="thanks-duck">
+        <pre class="ascii-duck">
+    __
+   (o o)
+  (  V  )
+  /--m-m-
+        </pre>
+        <p class="duck-speech">Quack! Thanks for sharing!</p>
+    </div>
+    
+    <div class="thanks-actions">
+        <a href="/" class="btn btn-primary">Send More Feedback</a>
+        <a href="https://duckduckgo.com" class="btn btn-secondary">Back to DuckDuckGo</a>
+    </div>
+</div>
+
+    </main>
+    <footer class="footer">
+        <p>Made with 🦆 for DuckDuckGo users</p>
+    </footer>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,152 @@
+---
+services:
+  # PostgreSQL Database
+  postgres:
+    build:
+      context: ./app/db
+      dockerfile: Dockerfile
+    container_name: feedduck-postgres-dev
+    environment:
+      DB_USER_MIGRATION_NAME: &db_user_migration_name migration_user
+      DB_USER_MIGRATION_PASSWORD: &db_user_migration_password dev_migration_password
+      DB_USER_WEB_NAME: &db_user_web_name web_app
+      DB_USER_WEB_PASSWORD: &db_user_web_password dev_web_password
+      DB_USER_ANALYSIS_NAME: &db_user_analysis_name feedback_analysis_app
+      DB_USER_ANALYSIS_PASSWORD: &db_user_analysis_password dev_analysis_password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: feedback
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8
+    # No ports exposed - only accessible via Docker network
+    # For debugging, use: docker exec -it ddg3-postgres-dev psql -U postgres -d feedback
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - feedduck-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Database Migration (runs once before web starts)
+  migration:
+    build:
+      context: ./app/feedback
+      dockerfile: Dockerfile
+    container_name: feedduck-migration-dev
+    environment:
+      DEBUG: "true"
+      # Database connection (using migration_user)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: *db_user_migration_name
+      DB_PASSWORD: *db_user_migration_password
+      DB_DATABASE: feedback
+      DB_SSLMODE: disable
+      # Migration settings
+      MIGRATIONS_DIR: /app/db/migrations
+    command: ["migrate"]
+    networks:
+      - feedduck-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"  # Run once and exit
+
+  # FeedDuck Web Application
+  web:
+    build:
+      context: ./app/feedback
+      dockerfile: Dockerfile
+    container_name: feedduck-web-dev
+    environment:
+      DEBUG: "true"
+      # Database connection
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: *db_user_web_name
+      DB_PASSWORD: *db_user_web_password
+      DB_DATABASE: feedback
+      DB_SSLMODE: disable
+      # Web server
+      WEB_HOST: 0.0.0.0
+      WEB_PORT: 8080
+      MAX_MESSAGE_LENGTH: "6666"
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - feedduck-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # Daily Analysis Job (run manually in dev)
+  # docker compose -f docker-compose.dev.yml run --rm analysis
+  analysis:
+    build:
+      context: ./app/feedback
+      dockerfile: Dockerfile
+    container_name: feedduck-analysis-dev
+    environment:
+      DEBUG: "true"
+      # Database connection
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: *db_user_analysis_name
+      DB_PASSWORD: *db_user_analysis_password
+      DB_DATABASE: feedback
+      DB_SSLMODE: disable
+      # Asana configuration (optional for testing)
+      ASANA_TOKEN: ${ASANA_TOKEN:-}
+      ASANA_WORKSPACE_GID: ${ASANA_WORKSPACE_GID:-}
+      ASANA_PROJECT_GID: ${ASANA_PROJECT_GID:-}
+    command: ["analysis"]
+    networks:
+      - feedduck-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    restart: "no"  # Run manually, not as a persistent service
+    profiles:
+      - analysis  # Only start when explicitly requested
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./app/nginx
+      dockerfile: Dockerfile
+      args:
+        ENV: dev
+    container_name: feedduck-nginx-dev
+    ports:
+      - "127.0.0.1:443:443/tcp"   # HTTP/2 over TCP
+      - "127.0.0.1:443:443/udp"   # HTTP/3 over QUIC (UDP)
+    volumes:
+      # Mount self-signed SSL certificates for development
+      - ./app/nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - feedduck-network
+    depends_on:
+      - web
+    restart: unless-stopped
+
+networks:
+  feedduck-network:
+    driver: bridge
+    name: feedduck-network
+
+volumes:
+  postgres_data:

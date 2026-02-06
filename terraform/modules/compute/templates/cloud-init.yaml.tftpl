@@ -1,0 +1,82 @@
+#cloud-config
+# ${app_name} VM Bootstrap Configuration
+# This cloud-init script:
+# 1. Installs system packages (Docker, Azure CLI, security tools)
+# 2. Configures system (firewall, fail2ban, SSL)
+# 3. Copies scripts and docker-compose.prod.yml (via Terraform)
+# 4. Runs bootstrap script as ubuntu user to:
+#    - Retrieve secrets from Key Vault using managed identity
+#    - Login to ACR and pull container images
+#    - Start Docker services
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - git
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - jq
+  - apt-transport-https
+  - ufw
+  - unattended-upgrades
+  - fail2ban
+  - certbot
+
+write_files:
+  # Common functions - shared utilities for scripts
+  - path: /opt/${app_name}/common.sh
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      ${common_script}
+
+  # Bootstrap script - runs as root for system configuration
+  - path: /opt/${app_name}/bootstrap.sh
+    permissions: '0755'
+    owner: 'root:root'
+    content: |
+      ${bootstrap_script}
+
+  # Provision script - runs as ubuntu user for app setup
+  - path: /opt/${app_name}/provision.sh
+    permissions: '0755'
+    owner: 'root:root'
+    content: |
+      ${provision_script}
+
+  # Docker Compose production configuration
+  - path: /opt/${app_name}/docker-compose.prod.yml
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      ${docker_compose_content}
+
+  # Systemd service for analysis job
+  - path: /etc/systemd/system/${app_name}-analysis.service
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      ${analysis_service}
+
+  # Systemd timer for analysis job (runs every 4 hours)
+  - path: /etc/systemd/system/${app_name}-analysis.timer
+    permissions: '0644'
+    owner: 'root:root'
+    content: |
+      ${analysis_timer}
+
+runcmd:
+  # Run bootstrap script as root
+  - /opt/${app_name}/bootstrap.sh
+
+final_message: |
+  ${app_name} VM bootstrap complete!
+  Check /var/log/cloud-init-output.log for details.
+
+  Next steps:
+  1. SSH to the VM: ssh ubuntu@<public-ip>
+  2. Verify services: cd /opt/${app_name} && docker compose -f docker-compose.prod.yml ps
+  3. Check logs: docker compose -f docker-compose.prod.yml logs -f

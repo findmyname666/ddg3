@@ -1,0 +1,33 @@
+# Direnv
+.direnv
+.envrc
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Environment files
+.env
+.env.local
+
+# sqlc generated files (we'll commit these for now, but you can gitignore if preferred)
+# internal/db/queries.sql.go
+# internal/db/models.go
+# internal/db/db.go is NOT generated, so don't ignore it
+
+# SSL certificates (self-signed for dev)
+app/nginx/ssl/*.pem
+app/nginx/ssl/*.key
+app/nginx/ssl/*.crt
+
+# SSH keys
+ssh/

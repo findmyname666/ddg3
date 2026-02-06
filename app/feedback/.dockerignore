@@ -1,0 +1,17 @@
+# Git
+.git
+.gitignore
+
+# Test files
+*_test.go
+testdata/
+
+# Documentation
+*.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

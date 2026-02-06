@@ -1,0 +1,117 @@
+{{define "feedback.html"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Share your feedback about DuckDuckGo">
+    <title>FeedDuck - Share Your Feedback</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <main class="container">
+<header class="header">
+    <div class="logo">🦆</div>
+    <h1>FeedDuck</h1>
+    <p class="tagline">Help us make DuckDuckGo better!</p>
+</header>
+
+{{if .Error}}
+<div class="alert alert-error">
+    <strong>Oops!</strong> {{.Error}}
+</div>
+{{end}}
+
+<form method="POST" action="/submit" class="feedback-form" novalidate>
+    <div class="form-group">
+        <label for="sentiment" class="form-label">
+            How do you feel about DuckDuckGo?
+            <span class="required">*</span>
+        </label>
+        <div class="sentiment-buttons">
+            <input type="radio" id="positive" name="sentiment" value="positive" required>
+            <label for="positive" class="sentiment-btn">
+                <span class="emoji">😊</span>
+                <span class="text">Positive</span>
+            </label>
+            
+            <input type="radio" id="negative" name="sentiment" value="negative" required>
+            <label for="negative" class="sentiment-btn">
+                <span class="emoji">😞</span>
+                <span class="text">Negative</span>
+            </label>
+        </div>
+        <div class="form-error" id="sentiment-error"></div>
+    </div>
+    
+    <div class="form-group">
+        <label for="message" class="form-label">
+            Tell us more (optional)
+        </label>
+        <textarea
+            id="message"
+            name="message"
+            rows="6"
+            maxlength="{{.MaxMessageLength}}"
+            placeholder="What's on your mind? Share your thoughts, suggestions, or concerns..."
+            class="form-textarea"
+        ></textarea>
+        <div class="char-count">
+            <span id="char-counter">0</span> / {{.MaxMessageLength}} characters
+        </div>
+    </div>
+    
+    <button type="submit" class="submit-btn">
+        <span class="btn-text">Send Feedback</span>
+    </button>
+    
+    <p class="privacy-note">
+        <small>
+            Your feedback is anonymous and helps us improve DuckDuckGo. 
+            We don't collect any personal information.
+        </small>
+    </p>
+</form>
+
+<script>
+// Character counter
+const textarea = document.getElementById('message');
+const counter = document.getElementById('char-counter');
+textarea.addEventListener('input', function() {
+    counter.textContent = this.value.length;
+});
+
+// Client-side validation
+const form = document.querySelector('.feedback-form');
+form.addEventListener('submit', function(e) {
+    const sentiment = document.querySelector('input[name="sentiment"]:checked');
+    const errorDiv = document.getElementById('sentiment-error');
+    
+    if (!sentiment) {
+        e.preventDefault();
+        errorDiv.textContent = 'Please select how you feel';
+        errorDiv.style.display = 'block';
+
+        return false;
+    }
+    
+    errorDiv.style.display = 'none';
+
+    return true;
+});
+
+// Clear error when sentiment is selected
+document.querySelectorAll('input[name="sentiment"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('sentiment-error').style.display = 'none';
+    });
+});
+</script>
+
+    </main>
+    <footer class="footer">
+        <p>Made with 🦆 for DuckDuckGo users</p>
+    </footer>
+</body>
+</html>
+{{end}}

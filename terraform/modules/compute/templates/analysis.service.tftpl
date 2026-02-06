@@ -1,0 +1,13 @@
+[Unit]
+Description=${app_name} Analysis Job
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/${app_name}
+ExecStart=/usr/bin/docker compose -f docker-compose.prod.yml run --rm analysis
+
+[Install]
+WantedBy=multi-user.target

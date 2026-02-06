@@ -1,0 +1,46 @@
+---
+version: "2"
+
+run:
+  go: "1.25"
+  timeout: 5m
+  issues-exit-code: 1
+  tests: true
+  modules-download-mode: readonly
+
+output:
+  formats:
+    text:
+      path: stdout
+      colors: true
+
+linters:
+  enable:
+    - lll # Line length limit
+    - govet # Go vet
+    - ineffassign # Detect ineffectual assignments
+    - misspell # Spelling mistakes
+    - gocritic # Go critic
+    - gosec # Security issues
+    - errcheck # Unchecked errors
+    - staticcheck # Static analysis
+
+  settings:
+    lll:
+      line-length: 120
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - golines
+
+  settings:
+    golines:
+      max-len: 120
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
